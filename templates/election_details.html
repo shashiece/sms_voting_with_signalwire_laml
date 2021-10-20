@@ -1,0 +1,130 @@
+{% extends "html_template.html" %}
+{% block content %}
+<div class="container">
+<div class="row mt-3 align-items-center">
+    <div class="col-sm-4">
+        <label>Election Name: <strong>{{election_details['election_name']}}</strong></label>
+     </div>
+     <div class="col-sm-4">
+        <label>Election Number: <strong>{{election_details['sms_number']}}</strong></label>
+     </div>
+     <div class="col-sm-4 text-end">
+        <a href="add_nominee"  data-bs-toggle="modal" data-bs-target="#addNomineeModal" class="btn btn-sm btn-primary add-new"> + Add Nominee</a>
+    </div>
+      </div>
+    <hr class="mt-3"/>
+</div>
+
+
+<div class="container">
+ <div id="chart_data" style="display: none;">{{chart_data}}</div>
+ <div id="div_background_colors" style="display: none;">{{background_colors}}</div>
+  <div class="row">
+   {%for nominee in votes_list%}
+    <div class="col-sm-4" >
+        <div style="border-radius: 8px; border: {{nominee['border_colour']}}; padding: 15px; margin-bottom: 1rem; background-color: {{nominee['backgtound_color']}}; " >
+            <h5 class="title_head">{{nominee['nominee_name']}}</h5>
+            <label class="blocked">Nominee code: <strong>{{nominee['nominee_code']}}</strong></label>
+            <label class="blocked mt-2">Votes count: <span class="count">{{nominee['vote_count']}}</span></label>
+        </div>
+      
+    </div>
+   {% endfor %}  
+  </div>
+</div>
+<br/>
+<br/>
+<div class="container chart_length">
+    <canvas id="myChart" height="20%" width="100%"></canvas>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.5.1/chart.min.js" integrity="sha512-Wt1bJGtlnMtGP0dqNFH1xlkLBNpEodaiQ8ZN5JLA5wpc1sUlk/O5uuOMNgvzddzkpvZ9GLyYNa8w2s7rqiTk5Q==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script>
+var ctx = document.getElementById('myChart').getContext('2d');
+var chart_data= document.getElementById("chart_data").innerHTML;
+var div_background_colors = document.getElementById("div_background_colors").innerHTML;
+console.log(chart_data);
+nominee_labels=[];
+votes_counts=[];
+chart_data.split(",").forEach(element => {
+    nominee_labels.push(element.split("@@")[0]);
+    votes_counts.push(parseInt(element.split("@@")[1]));
+});
+
+chart_background_colors=[];
+chart_border_colors=[];
+div_background_colors.split("$$").forEach(element => {
+    chart_background_colors.push(element.split("@@")[0]);
+    chart_border_colors.push(element.split("@@")[1]);
+});
+
+nominee_labels.pop();
+votes_counts.pop();
+chart_background_colors.pop();
+chart_border_colors.pop();
+console.log(chart_border_colors);
+var myChart = new Chart(ctx, {
+    type: 'bar',
+    
+    data: {
+        labels: nominee_labels,
+        datasets: [{
+            label: '# of Votes',
+            skipNull: true,
+            data: votes_counts,
+            barPercentage: 0.5,
+            borderWidth:10,
+            backgroundColor: chart_background_colors,
+            borderColor: chart_border_colors,
+            borderWidth: 1
+        }]
+    },
+    options: {
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        }
+    }
+});
+</script>
+
+
+
+<div class="modal fade" id="addNomineeModal" tabindex="-1" aria-labelledby="addNomineeModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+            <h5 class="modal-title" id="addNominee studioModalLabel">Add Nominee</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form action = "/save_nominee_details/{{election_id}}" class="ms-3" method="post">  
+                    <div class="row mt-4">
+                        <div class="col-sm-6">
+                            <div class="mb-3">
+                                <label class="mb-2">Name</label>
+                                <input type="text" name="nominee_name" class="form-control">
+                            </div>
+			     <div class="mb-3">
+                                <label class="mb-2">Code</label>
+                                <input type="text" name="nominee_code" class="form-control">
+                            </div>
+				<div style="display: none;">
+				<input type="text" name="election_id" value="1" class="form-control">
+				</div>
+			    </div>
+                    </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary me-2" data-bs-dismiss="modal">Close</button>
+                <button type="submit" class="btn btn-primary">Create Nominee</button>
+                    </form>
+                
+            </div>
+        </div>
+        </div>
+    </div>
+
+
+{% endblock content %}

@@ -1,0 +1,37 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+*, body{
+	font-family: 'Inter', sans-serif !important;
+}
+hr{
+	background-color: #89909d;
+}
+
+.nominee_box{
+	border-radius: 8px;
+	border: 1px solid #dc3545;
+	padding: 15px;
+	margin-bottom: 1rem;
+	background-color: rgb(220 53 69 / 5%);
+}
+
+.title_head{
+	text-transform: capitalize;
+	font-weight: 600;
+}
+
+.count{
+	border-radius: 4px;
+	padding: 3px 5px;
+	background-color: #dc3545;
+	color: #fff;
+	
+}
+
+.chart_length{
+	max-height: 300px !important;
+}
+
+.blocked{
+	display: block;
+}
