@@ -7,6 +7,7 @@
      </div>
      <div class="col-sm-4">
         <label>Election Number: <strong>{{election_details['sms_number']}}</strong></label>
+        <div id="election_number" style="display: none;">{{election_details['sms_number']}}</div>
      </div>
      <div class="col-sm-4 text-end">
         <a href="add_nominee"  data-bs-toggle="modal" data-bs-target="#addNomineeModal" class="btn btn-sm btn-primary add-new"> + Add Nominee</a>
@@ -25,7 +26,7 @@
         <div style="border-radius: 8px; border: {{nominee['border_colour']}}; padding: 15px; margin-bottom: 1rem; background-color: {{nominee['backgtound_color']}}; " >
             <h5 class="title_head">{{nominee['nominee_name']}}</h5>
             <label class="blocked">Nominee code: <strong>{{nominee['nominee_code']}}</strong></label>
-            <label class="blocked mt-2">Votes count: <span class="count">{{nominee['vote_count']}}</span></label>
+            <label class="blocked mt-2">Votes count: <span class="count" id="id-{{nominee['nominee_code']}}">{{nominee['vote_count']}}</span></label>
         </div>
       
     </div>
@@ -39,31 +40,66 @@
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.5.1/chart.min.js" integrity="sha512-Wt1bJGtlnMtGP0dqNFH1xlkLBNpEodaiQ8ZN5JLA5wpc1sUlk/O5uuOMNgvzddzkpvZ9GLyYNa8w2s7rqiTk5Q==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://js.pusher.com/7.0/pusher.min.js"></script>
+
 <script>
 var ctx = document.getElementById('myChart').getContext('2d');
+var myChart;
+var nominee_labels=[];
+var votes_counts=[];
+var chart_background_colors=[];
+var chart_border_colors=[];
+
+
 var chart_data= document.getElementById("chart_data").innerHTML;
 var div_background_colors = document.getElementById("div_background_colors").innerHTML;
+var election_number= document.getElementById("election_number").innerHTML;
 console.log(chart_data);
-nominee_labels=[];
-votes_counts=[];
 chart_data.split(",").forEach(element => {
     nominee_labels.push(element.split("@@")[0]);
     votes_counts.push(parseInt(element.split("@@")[1]));
 });
 
-chart_background_colors=[];
-chart_border_colors=[];
 div_background_colors.split("$$").forEach(element => {
     chart_background_colors.push(element.split("@@")[0]);
     chart_border_colors.push(element.split("@@")[1]);
 });
+
+
 
 nominee_labels.pop();
 votes_counts.pop();
 chart_background_colors.pop();
 chart_border_colors.pop();
 console.log(chart_border_colors);
-var myChart = new Chart(ctx, {
+
+
+Pusher.logToConsole = true;
+
+var pusher = new Pusher('e4229bc4dffdc9ccb3eb', {
+      cluster: 'ap2'
+    });
+var channel = pusher.subscribe('sharp-cow-343');
+    channel.bind(election_number, function(data) {
+      
+      nom_pushner_data=data["message"].split(",");
+      nom_pushner_data.pop();
+      votes_counts=[];
+      nom_pushner_data.forEach(element => {
+        let nom_code_id = "id-"+element.split("@@")[0];
+        document.getElementById(nom_code_id).innerHTML = (parseInt(element.split("@@")[1]));
+    	votes_counts.push(parseInt(element.split("@@")[1]));
+      });
+      alert(votes_counts)
+      myChart.data.datasets.forEach((dataset) => {
+        dataset.data=[];
+        dataset.data.push(...votes_counts);
+      });
+      myChart.update();
+    });
+
+
+myChart = new Chart(ctx, {
     type: 'bar',
     
     data: {

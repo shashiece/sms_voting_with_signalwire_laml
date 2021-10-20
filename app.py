@@ -4,6 +4,7 @@ from flask import render_template, url_for, flash, request, redirect, Response, 
 import sqlite3
 import pprint
 import json
+import pusher
 
 app = Flask(__name__)
 app.debug=True
@@ -172,6 +173,23 @@ def check_already_voted(form_data,election_id):
    return row
 
 
+def pusn_to_websocket(election_id,to_number):
+    votes_list=get_votes_list(election_id)
+    chart_data=""
+    background_colors=""
+    for vote in votes_list:
+        chart_data = chart_data + vote['nominee_code'] + "@@" + str(vote['vote_count']) + ","
+
+    pusher_client = pusher.Pusher(
+        app_id='1284957',
+        key='e4229bc4dffdc9ccb3eb',
+        secret='e01ea4764d7f4c9b99f8',
+        cluster='ap2',
+        ssl=False
+    )
+    pusher_client.trigger('sharp-cow-343', to_number, {'message': chart_data})
+
+
 @app.route("/cluecon_election_webhook",methods = ["POST"])
 def cluecon_election_webhook():
    print(request.form)
@@ -187,26 +205,27 @@ def cluecon_election_webhook():
         xml="<Response><Message>You enterd an invalid code,"
         for row in nominees: 
            xml=xml +" To vote " + row["nominee_name"] + " reply with  code :" +  row["nominee_code"]  + "\n"
-        xml=xml+"</Message></Response>"
+           xml=xml+"</Message></Response>"
      else:
-        xml="<Response><Message>Thank you for your vote</Message></Response>"
-     already_voted=check_already_voted(request.form,election_details[0])
-     try:
-        if already_voted == None:
-           with sqlite3.connect('./cluecon_elections.db') as con:
-               cur = con.cursor()
-               cur.execute("INSERT into vote (to_number,from_number,body,sid,nominee_id,election_id) values (?,?,?,?,?,?)", 
-                  [request.form['To'],
-                  request.form['From'],
-                  request.form['Body'],
-                  request.form['MessageSid'],
-                  vote_for[0],election_details[0]])
-               con.commit()
-        else:
-           xml="<Response><Message>Your vote aleady registred for  "+ already_voted[3] + "</Message></Response>"
-     except Exception as e:
+        already_voted=check_already_voted(request.form,election_details[0])
+        try:
+           if already_voted == None:
+              with sqlite3.connect('./cluecon_elections.db') as con:
+                 cur = con.cursor()
+                 cur.execute("INSERT into vote (to_number,from_number,body,sid,nominee_id,election_id) values (?,?,?,?,?,?)", 
+                    [request.form['To'],
+                    request.form['From'],
+                    request.form['Body'],
+                    request.form['MessageSid'],
+                    vote_for[0],election_details[0]])
+                 con.commit()
+              xml="<Response><Message>Thank you for your vote</Message></Response>"
+              pusn_to_websocket(election_details[0],request.form['To'])
+           else:
+              xml="<Response><Message>Your vote aleady registred for  "+ already_voted[3] + "</Message></Response>"
+        except Exception as e:
             #con.rollback()
-          print(e)
+            print(e)
 
    return Response(xml, mimetype='text/xml')
 
