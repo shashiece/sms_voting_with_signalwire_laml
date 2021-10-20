@@ -9,10 +9,14 @@ import pusher
 app = Flask(__name__)
 app.debug=True
 
+db_file='/var/www/FlaskApp/FlaskApp/cluecon_elections.db'
 
+@app.route('/',methods=['GET'])
+def main_route():
+  return redirect('/election_list')
 @app.route('/election_list', methods=['GET'])
 def election_list():
-    conn = sqlite3.connect('./cluecon_elections.db')
+    conn = sqlite3.connect(db_file)
     conn.row_factory = sqlite3.Row
     curs = conn.cursor()
     curs.execute("SELECT * from election")
@@ -28,7 +32,7 @@ def save_election_details():
             election_number=request.form["election_number"]
 
             print(election_number)
-            with sqlite3.connect('./cluecon_elections.db') as con:
+            with sqlite3.connect(db_file) as con:
                 cur = con.cursor()
                 cur.execute(
                     "INSERT into election (election_name,sms_number) values (?,?)", [election_name,election_number])
@@ -44,7 +48,7 @@ def save_election_details():
 
 
 def get_election_by_election_id(election_id):
-    conn = sqlite3.connect('./cluecon_elections.db')
+    conn = sqlite3.connect(db_file)
     conn.row_factory = sqlite3.Row
     curs = conn.cursor()
     curs.execute("SELECT * FROM election where election_id=?",[election_id])
@@ -52,7 +56,7 @@ def get_election_by_election_id(election_id):
     return rows
 
 def get_nominee_by_election_id(election_id):
-    conn = sqlite3.connect('./cluecon_elections.db')
+    conn = sqlite3.connect(db_file)
     conn.row_factory = sqlite3.Row
     curs = conn.cursor()
     curs.execute("SELECT * FROM nominee where election_id=?",[election_id])
@@ -61,7 +65,7 @@ def get_nominee_by_election_id(election_id):
 
 
 def get_election_results_by_election_id(election_id):
-    conn = sqlite3.connect('./cluecon_elections.db')
+    conn = sqlite3.connect(db_file)
     conn.row_factory = sqlite3.Row
     curs = conn.cursor()
     #curs.execute("select  count(1) as vote_count, v.nominee_id, n.nominee_name, n.nominee_code from nominee n left join vote v  on v.election_id =n.election_id  where v.election_id=? group by v.nominee_id",[election_id])
@@ -114,7 +118,7 @@ def view_election(election_id):
 def delete_delete_election(election_id):
     msg="POST request"
     try:
-        with sqlite3.connect('./cluecon_elections.db') as con:
+        with sqlite3.connect(db_file) as con:
             cur = con.cursor()
             cur.execute("DELETE FROM election where election_id=?",[election_id])
             con.commit()
@@ -133,7 +137,7 @@ def save_nominee_details(election_id):
         try:
             nominee_name = request.form["nominee_name"]
             nominee_code=request.form["nominee_code"]
-            with sqlite3.connect('./cluecon_elections.db') as con:
+            with sqlite3.connect(db_file) as con:
                 cur = con.cursor()
                 cur.execute(
                     "INSERT into nominee (nominee_name,nominee_code,election_id) values (?,?,?)", [nominee_name,nominee_code.upper().strip(),election_id])
@@ -148,7 +152,7 @@ def save_nominee_details(election_id):
             return redirect('/view_election/'+election_id)
 
 def get_nominees_by_enection_id_and_nominee_code(body,election_id):
-    conn = sqlite3.connect('./cluecon_elections.db')
+    conn = sqlite3.connect(db_file)
     conn.row_factory = sqlite3.Row
     curs = conn.cursor()
     curs.execute("SELECT * FROM nominee where election_id=? and nominee_code=?",[election_id,body.upper().strip()])
@@ -156,7 +160,7 @@ def get_nominees_by_enection_id_and_nominee_code(body,election_id):
     return row
 
 def get_election_by_number(to_number):
-    conn = sqlite3.connect('./cluecon_elections.db')
+    conn = sqlite3.connect(db_file)
     conn.row_factory = sqlite3.Row
     curs = conn.cursor()
     curs.execute("SELECT * FROM election where sms_number=?",[to_number])
@@ -165,7 +169,7 @@ def get_election_by_number(to_number):
 
 
 def check_already_voted(form_data,election_id):
-   conn = sqlite3.connect('./cluecon_elections.db')
+   conn = sqlite3.connect(db_file)
    conn.row_factory = sqlite3.Row
    curs = conn.cursor()
    curs.execute("SELECT * FROM vote where to_number=? and from_number=? and election_id=?",[form_data['To'],form_data['From'],election_id])
@@ -205,12 +209,12 @@ def cluecon_election_webhook():
         xml="<Response><Message>You enterd an invalid code,"
         for row in nominees: 
            xml=xml +" To vote " + row["nominee_name"] + " reply with  code :" +  row["nominee_code"]  + "\n"
-           xml=xml+"</Message></Response>"
+        xml=xml+"</Message></Response>"
      else:
         already_voted=check_already_voted(request.form,election_details[0])
         try:
            if already_voted == None:
-              with sqlite3.connect('./cluecon_elections.db') as con:
+              with sqlite3.connect(db_file) as con:
                  cur = con.cursor()
                  cur.execute("INSERT into vote (to_number,from_number,body,sid,nominee_id,election_id) values (?,?,?,?,?,?)", 
                     [request.form['To'],

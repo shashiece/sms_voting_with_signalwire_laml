@@ -90,7 +90,6 @@ var channel = pusher.subscribe('sharp-cow-343');
         document.getElementById(nom_code_id).innerHTML = (parseInt(element.split("@@")[1]));
     	votes_counts.push(parseInt(element.split("@@")[1]));
       });
-      alert(votes_counts)
       myChart.data.datasets.forEach((dataset) => {
         dataset.data=[];
         dataset.data.push(...votes_counts);
