@@ -11,6 +11,24 @@ app.debug=True
 
 db_file='/var/www/FlaskApp/FlaskApp/cluecon_elections.db'
 
+def check_auth(username, pwd):
+    """This function is called to check if a username /
+    password combination is valid.
+    """
+    cfg = {'username':'admin','password':'vJCmCUrHpRdKdUHAwk'}
+    return username == cfg.get('username') and pwd == cfg.get('password')
+
+
+def authenticate():
+    """Sends a 401 response that enables basic auth"""
+    return Response(
+        'Could not verify your access level for that URL.\n'
+        'You have to login with proper credentials', 401,
+        {'WWW-Authenticate': 'Basic realm="Login Required"'}
+    )
+
+
+
 @app.route('/',methods=['GET'])
 def main_route():
   return redirect('/election_list')
@@ -25,6 +43,10 @@ def election_list():
 
 @app.route('/save_election_details', methods=['POST'])
 def save_election_details():
+     auth = request.authorization
+     if not auth or not check_auth(auth.username, auth.password):
+        return authenticate()
+
      msg=''
      if request.method == "POST":
         try:
@@ -116,6 +138,10 @@ def view_election(election_id):
 
 @app.route("/delete_election/<election_id>",methods = ["POST"])
 def delete_delete_election(election_id):
+    auth = request.authorization
+    if not auth or not check_auth(auth.username, auth.password):
+       return authenticate()
+
     msg="POST request"
     try:
         with sqlite3.connect(db_file) as con:
@@ -132,6 +158,10 @@ def delete_delete_election(election_id):
 
 @app.route("/save_nominee_details/<election_id>",methods = ["POST"])
 def save_nominee_details(election_id):
+     auth = request.authorization
+     if not auth or not check_auth(auth.username, auth.password):
+        return authenticate()
+
      msg=''
      if request.method == "POST":
         try:
